@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:plateful_app/features/recipe_detail/providers/social_provider.dart';
 import '../models/recipe_detail_model.dart';
 import '../services/recipe_detail_service.dart';
+import 'package:provider/provider.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
   final String recipeId;
@@ -14,6 +16,7 @@ class RecipeDetailScreen extends StatefulWidget {
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   final RecipeDetailService _service = RecipeDetailService();
+  final _commentController = TextEditingController();
   RecipeDetailModel? _recipe;
   bool _isLoading = true;
   String? _error;
@@ -22,6 +25,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   void initState() {
     super.initState();
     _loadRecipe();
+    Future.microtask(() {
+      context.read<SocialProvider>().loadRecipeData(widget.recipeId);
+    });
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRecipe() async {
@@ -39,6 +51,29 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         _error = 'Recipe not found';
       }
     });
+  }
+
+  void _showCommentsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          return _CommentsSheet(
+            recipeId: widget.recipeId,
+            _commentController: _commentController,
+            ScrollController: ScrollController,
+          );
+        },
+      ),
+    );
   }
 
   Color _getDifficultyColor(String difficulty) {
@@ -111,23 +146,66 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     ),
             ),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.favorite_border),
-                onPressed: () {
-                  // TODO: Like functionality
+              Consumer<SocialProvider>(
+                builder: (context, provider, _) {
+                  final isLiked = provider.isLiked(widget.recipeId);
+                  final likesCount = provider.getLikesCount(widget.recipeId);
+
+                  return Stack(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          provider.toggleLike(widget.recipeId);
+                        },
+                        icon: Icon(
+                          isLiked ? Icons.favorite : Icons.favorite_border,
+                          color: isLiked ? Colors.red : null,
+                        ),
+                      ),
+                      if (likesCount > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              '$likesCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
                 },
               ),
               IconButton(
                 icon: const Icon(Icons.bookmark_border),
                 onPressed: () {
-                  // TODO: Bookmark functionality
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Bookmark - Coming soon!')),
+                  );
                 },
               ),
               IconButton(
-                icon: const Icon(Icons.share),
                 onPressed: () {
-                  // TODO: Share functionality
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Share - Coming soon!')),
+                  );
                 },
+                icon: const Icon(Icons.share),
               ),
             ],
           ),
@@ -201,9 +279,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         ),
                       ),
                       OutlinedButton(
-                        onPressed: () {
-                          // TODO: Follow functionality
-                        },
+                        onPressed: () {},
                         child: const Text('Follow'),
                       ),
                     ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:plateful_app/core/navigation/main_navigation.dart';
+import 'package:plateful_app/features/recipe_detail/providers/social_provider.dart';
 import 'features/search/providers/search_provider.dart';
 import 'features/create_recipe/providers/create_recipe_provider.dart';
 import 'features/home/providers/recipe_provider.dart';
@@ -33,6 +34,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CreateRecipeProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
+        ChangeNotifierProvider(create: (_) => SocialProvider()),
       ],
       child: MaterialApp(
         title: 'Plateful',
